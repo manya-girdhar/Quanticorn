@@ -191,10 +191,13 @@ if __name__ == "__main__":
 
         # Ask for user input
         print("Open a tile")
-        check = input("y to check game or n")
+        # EDIT THIS *****************
+        # Error checking needs to be added to avoid opening the same tile ****
+        check = str(input("y to check the game:"))
         if (check == 'y'):
             game_won = game.won(score, unicorn_found, check_game)
             continue
+        "Choose a tile to begin"
         x = input("Row position 1, 2 or 3 :")
         y = input("Column position 1, 2 or 3 :")
         x = int(x) - 1 # 0 based indexing
