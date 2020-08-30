@@ -33,12 +33,11 @@ class Quanticorn:
         self.tiles_on_screen = {}
         self.answer_key = {}
         self.unopenedTile = None
-        self.openedTile = Button(frame, image = dict_of_images['tile_opened'],command=None)
-        self.openedTile["bg"] = "white"
-        self.openedTile["border"] = "0"
-        self.lockedTile = Button(frame, image = dict_of_images['tile_locked'],command=None, text='')
-        self.lockedTile["bg"] = "white"
-        self.lockedTile["border"] = "0"
+        self.openedTile = None
+        # self.lockedTile = None
+        # self.lockedTile = Button(frame, image = dict_of_images['tile_locked'],command=None, text='')
+        # self.lockedTile["bg"] = "white"
+        # self.lockedTile["border"] = "0"
 
 
     """This function assigns a unique number to each tile in the grid
@@ -76,7 +75,7 @@ class Quanticorn:
                 self.openedTile.grid(row=r, column=c)
                 self.answer_key[(r, c)] = self.openedTile
 
-        # put all tiles in superposition
+        # put all tiles i.e. qubits in superposition
         for tile_number, tile in self.dict_of_mappings.items():
             # tile_number is assumed to be equal to qubit index in this case
             # puts the qubit in superposition by applying the hadamard gate
@@ -86,6 +85,7 @@ class Quanticorn:
         pos_x = int(quantumrandom.randint(0, self.tiles))  # position along the row x
         pos_y = int(quantumrandom.randint(0, self.tiles))  # position along the column y
         self.grid[pos_x][pos_y] = 'U'                      # assign unicorn a random position
+        self.answer_key[(pos_x, pos_y)].configure(image = dict_of_images['unicorn'])
 
         # place lightning_bolts randomly
         lightning_bolts_placed = 0
@@ -97,6 +97,7 @@ class Quanticorn:
 
             if (self.grid[pos_x][pos_y] != 'X' and self.grid[pos_x][pos_y] != 'U'):
                 self.grid[pos_x][pos_y] = 'X'
+                self.answer_key[(pos_x, pos_y)].configure(image = dict_of_images['lightning'])
 
                 # index tiles around the lightning_bolts
                 # Make this part of the code more efficient ***
@@ -180,9 +181,76 @@ class Quanticorn:
 
         return self.player_grid
 
+
+    # Make this function more efficent *******
     def flip_tile(self, r, c):
-        self.tiles_on_screen[(r, c)].destroy()
-        self.tiles_on_screen[(r, c)] = self.answer_key[(r, c)]
+        global avaliable_flips, lightning_bolt_found, score, score_display, score_output
+        avaliable_flips -= 1
+
+        # Check if the tile has a Unicorn
+        if self.grid[r][c] == 'U':
+            unicorn_found = True
+            self.tiles_on_screen[(r, c)].destroy()
+            self.tiles_on_screen[(r, c)] = self.answer_key[(r, c)]
+            self.game_status()
+            # output = won(score, unicorn_found, check_game)
+            # game_status(output)
+
+        # Check if the tile has a lightning_bolt
+        elif self.grid[r][c] == 'X':
+
+            self.tiles_on_screen[(r, c)].destroy()
+            self.tiles_on_screen[(r, c)] = self.answer_key[(r, c)]
+
+            # measure the value of the lightning_bolt which was initially put into superposition
+            self.circuit.measure([0], [0])
+            job = q.execute(self.circuit, backend=backend, shots=500)
+            # counts is a dictionary
+            counts = job.result().get_counts(self.circuit)
+            print("Counts ", counts)
+
+            max_val = max(counts, key=counts.get)
+
+            # 50 percent chance
+            if max_val != 1:
+                game.display_grid(grid)
+                lightning_bolt_found = True
+                self.game_status()
+                # output = game_finished(player_grid, avaliable_flips, lightning_bolt_found)
+                # game_status(output)
+
+            else:
+                messagebox.showinfo('Feeling Lucky', 'The Quantum World is in your favour! Continue Playing')
+                print("The Quantum World is in your favour!")
+                print("Continue playing...")
+                self.player_grid[r][c] = self.grid[r][c]
+                self.display_grid(self.player_grid)
+
+
+        # else if the tile is neither a unicorn nor a lightning bolt
+        else:
+            # Choose to reveal the value on the tile is random
+            self.circuit.measure([0, 1], [0])
+            job = q.execute(self.circuit, backend=backend, shots=500)
+            counts = job.result().get_counts(self.circuit)
+            max_val = max(counts, key=counts.get)
+            print(counts)
+            if max_val != 1:
+                # reveal the cell
+                self.player_grid[r][c] = self.grid[r][c]
+                self.tiles_on_screen[(r, c)].destroy()
+                self.tiles_on_screen[(r, c)] = self.answer_key[(r, c)]
+            else:
+                self.tiles_on_screen[(r,c)].destroy()
+                self.tiles_on_screen[(r,c)].configure(image=dict_of_images['tile_locked'])
+                messagebox.showinfo('Oops', 'The Quantum World is not in your favour. The tile is locked.')
+                print("The Quantum World is not in your favour!")
+                game.player_grid[r][c] = '$'  # blank cell
+
+            self.display_grid(self.player_grid)
+            score += 1
+            canvas.itemconfigure(score_display, text=score_output)
+
 
     """This function takes in player grid or grid as its input and prints the
     grid on the screen."""
@@ -230,6 +298,20 @@ class Quanticorn:
             return False
 
 
+    def game_status(self):
+        while True:
+            game_won = self.won(score, unicorn_found, check_game)
+            if(game_won == True):
+                print("YOU WON")
+                break
+
+            game_over = self.game_finished(player_grid, avaliable_flips, lightning_bolt_found)
+            if(game_over == True):
+                print("YOU LOST")
+                print("Your Score: ", score)
+                break
+
+
 def create_window(width_of_window, height_of_window):
     global width_of_screen, height_of_screen, x_position, y_position
     window = Tk()
@@ -243,28 +325,6 @@ def create_window(width_of_window, height_of_window):
     window.resizable(False, False)
     return window
 
-def home_screen():
-    global score, frame
-    canvas.create_rectangle(0, 0, width, 55, fill="#191618", width=1, outline="black")
-    score_output = "SCORE  " + str(score)
-    score_display = canvas.create_text(550, 25, fill="white", text=score_output, font="Arial 16 bold")
-    tile = Button(frame, image = dict_of_images['tile'], command=None)
-    # header_image = canvas.create_image(130, 30, image=tile)
-
-    # Label(frame, text="Figure").grid(row = 0, column = 0, columnspan = 10) # top full width
-    # Label(frame, text="Flags").grid(row = 10+1, column = 0, columnspan = int(10/2)) # bottom left
-    # Label(frame, text="Mines").grid(row = 10+1, column = int(10/2)-1, columnspan = int(10/2)) # bottom right
-    # figure1=self.canvas.create_rectangle(80, 80, 120, 120, fill="blue")
-
-    #initialize grid
-    grid = Frame(frame)
-    grid.grid(column=10, row=10, columnspan=2, rowspan=2)
-
-    #example values
-    for x_pos in range(10):
-        for y_pos in range(10):
-            tile.grid(row=x_pos, column=y_pos)
-
 
 if __name__ == "__main__":
 
@@ -272,25 +332,34 @@ if __name__ == "__main__":
     width, height = 650, 650
     window = create_window(width, height) # calls the create_window function.
 
+    # loading graphics for the GUI
     dict_of_images = {}
-    dict_of_images['logo'] = PhotoImage(file="../../static/graphics/logo.png")
+    dict_of_images['logo'] = PhotoImage(file="../../static/graphics/quanticorn.png")
     dict_of_images['lightning'] = PhotoImage(file="../../static/graphics/lightning.png")
     dict_of_images['tile'] = PhotoImage(file="../../static/graphics/tile-unopened.png")
     dict_of_images['tile_locked'] = PhotoImage(file="../../static/graphics/tile-locked.png")
     dict_of_images['tile_opened'] = PhotoImage(file="../../static/graphics/tile-opened.png")
     dict_of_images['unicorn'] = PhotoImage(file="../../static/graphics/unicorn.png")
 
-    canvas = Canvas(window, width=width, height=25, bg="black")
+    canvas = Canvas(window, width=width, height=25, bg="#191618")
     canvas.pack(side='top', fill='y', expand=True)
     frame = Frame(window, width=width, height=height-25, bg='white', padx=5, pady=5)
     frame.pack(side="bottom", fill="y", expand=False)
     frame.grid_rowconfigure(10, weight=1)
     frame.grid_columnconfigure(10, weight=1)
 
-    # home_screen() # sets up the game environment
-
     game = Quanticorn(10, 10)  # create an instance of the game
+
+    # game variables
     score = 0                  # inital score of the user
+    avaliable_flips = (game.tiles*game.tiles - 4)  # limit the number of avaliable flips
+    lightning_bolt_found = False
+    unicorn_found = False
+    check_game = False # Not implemented !!! ******
+
+    header_image = canvas.create_image(70, 22, image=dict_of_images['logo'])
+    score_output = "SCORE  " + str(score)
+    score_display = canvas.create_text(550, 25, fill="white", text=score_output, font="Arial 16 bold")
 
     grid = game.initialise_grid()
     game.display_grid(grid)  # for testing purposes
@@ -298,90 +367,8 @@ if __name__ == "__main__":
     player_grid = game.initialise_player_grid()
     game.display_grid(player_grid)
 
-
-    avaliable_flips = (game.tiles*game.tiles - 4)  # limit the number of avaliable flips
-    lightning_bolt_found = False
-    unicorn_found = False
-    check_game = False
-
-    while True:
-        game_over = game.game_finished(player_grid, avaliable_flips, lightning_bolt_found)
-        game_won = game.won(score, unicorn_found, check_game)
-
-        if(game_won == True):
-            print("YOU WON")
-            break
-
-        elif (game_over == True):
-            print("YOU LOST")
-            print("Your Score: ", score)
-            break
-
-        # Ask for user input
-        print("Open a tile")
-        # EDIT THIS *****************
-        # Error checking needs to be added to avoid opening the same tile ****
-        check = str(input("y to check the game:"))
-        if (check == 'y'):
-            game_won = game.won(score, unicorn_found, check_game)
-            continue
-        "Choose a tile to begin"
-        x = input("Row position 1, 2 or 3 :")
-        y = input("Column position 1, 2 or 3 :")
-        x = int(x) - 1 # 0 based indexing
-        y = int(y) - 1 # 0 based indexing
-        # while tiles in list of opened tiles try again
-
-        avaliable_flips -= 1
-
-        # Check if the tile has a Unicorn
-        if grid[x][y] == 'U':
-            unicorn_found = True
-            continue
-
-        # Check if the tile has a lightning_bolt
-        elif grid[x][y] == 'X':
-
-            # measure the value of the lightning_bolt which was initially put into superposition
-            game.circuit.measure([0], [0])
-            job = q.execute(game.circuit, backend=backend, shots=500)
-            # counts is a dictionary
-            counts = job.result().get_counts(game.circuit)
-            print("Counts ", counts)
-
-            max_val = max(counts, key=counts.get)
-
-            # 50 percent chance
-            if max_val != 1:
-                game.display_grid(grid)
-                lightning_bolt_found = True
-                continue
-
-            else:
-                print("The Quantum World is in your favour!")
-                print("Continue playing...")
-                game.player_grid[x][y] = game.grid[x][y]
-                game.display_grid(player_grid)
-
-        # else if the tile is neither a unicorn nor a lightning bolt
-        else:
-            # Choose to reveal the value on the tile is random
-            game.circuit.measure([0], [0])
-            job = q.execute(game.circuit, backend=backend, shots=500)
-            counts = job.result().get_counts(game.circuit)
-            max_val = max(counts, key=counts.get)
-
-            if max_val != 1:
-                # reveal the cell
-                game.player_grid[x][y] = game.grid[x][y]
-                # game.tiles_on_screen[(x,y)].configure(image=dict_of_images['tile_opened'])
-                game.tiles_on_screen[(x, y)] = game.openedTile
-            else:
-                print("The Quantum World is not in your favour!")
-                game.player_grid[x][y] = '$'  # blank cell
-
-            game.display_grid(player_grid)
-            score += 1
-
+    # game.game_status()
 
 window.mainloop()
+
+# NOTE - Check game button needs to be created
