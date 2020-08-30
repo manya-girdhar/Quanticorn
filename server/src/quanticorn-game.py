@@ -12,7 +12,7 @@ from qiskit import Aer
 from qiskit import IBMQ
 
 # IBMQ.save_account(open("keypath.txt","r").read())
-IBMQ.load_account()
+# IBMQ.load_account()
 backend = Aer.get_backend("qasm_simulator") # Running jobs on the simulator locally
 
 
@@ -184,7 +184,7 @@ class Quanticorn:
 
     # Make this function more efficent *******
     def flip_tile(self, r, c):
-        global avaliable_flips, lightning_bolt_found, score, score_display, score_output
+        global avaliable_flips, lightning_bolt_found, score, score_display, unicorn_found
         avaliable_flips -= 1
 
         # Check if the tile has a Unicorn
@@ -207,7 +207,8 @@ class Quanticorn:
             job = q.execute(self.circuit, backend=backend, shots=500)
             # counts is a dictionary
             counts = job.result().get_counts(self.circuit)
-            print("Counts ", counts)
+            # print("Counts ", counts)
+            print(round(max_val))
 
             max_val = max(counts, key=counts.get)
 
@@ -230,11 +231,11 @@ class Quanticorn:
         # else if the tile is neither a unicorn nor a lightning bolt
         else:
             # Choose to reveal the value on the tile is random
-            self.circuit.measure([0, 1], [0])
+            self.circuit.measure([0], [0])
             job = q.execute(self.circuit, backend=backend, shots=500)
             counts = job.result().get_counts(self.circuit)
             max_val = max(counts, key=counts.get)
-            print(counts)
+            print(round(max_val))
             if max_val != 1:
                 # reveal the cell
                 self.player_grid[r][c] = self.grid[r][c]
@@ -249,6 +250,7 @@ class Quanticorn:
 
             self.display_grid(self.player_grid)
             score += 1
+            score_output = "SCORE  " + str(score)
             canvas.itemconfigure(score_display, text=score_output)
 
 
