@@ -28,6 +28,17 @@ class Quanticorn:
         # The circuit is created with equal number of qubits and bits
         self.circuit = q.QuantumCircuit((self.tiles*self.tiles), (self.tiles*self.tiles))
 
+        # graphics
+        self.tiles_on_screen = {}
+        self.answer_key = {}
+        self.unopenedTile = None
+        self.openedTile = Button(frame, image = dict_of_images['tile_opened'],command=None)
+        self.openedTile["bg"] = "white"
+        self.openedTile["border"] = "0"
+        self.lockedTile = Button(frame, image = dict_of_images['tile_locked'],command=None, text='')
+        self.lockedTile["bg"] = "white"
+        self.lockedTile["border"] = "0"
+
 
     """This function assigns a unique number to each tile in the grid
     The mappings between is the tile position and the unique number is stored
@@ -54,6 +65,15 @@ class Quanticorn:
 
         # calls the function that assigns unique numbers to each tile
         self.assign_tile_numbers()
+
+        # create GUI with opened tiles
+        for r in range(self.tiles):
+            for c in range(self.tiles):
+                self.openedTile = Button(frame, image = dict_of_images['tile_opened'],command=None, text='')
+                self.openedTile["bg"] = "white"
+                self.openedTile["border"] = "0"
+                self.openedTile.grid(row=r, column=c)
+                self.answer_key[(r, c)] = self.openedTile
 
         # put all tiles in superposition
         for tile_number, tile in self.dict_of_mappings.items():
@@ -82,34 +102,58 @@ class Quanticorn:
                 if (pos_x <= self.tiles-2):
                      if (self.grid[pos_x+1][pos_y] != 'X' and self.grid[pos_x+1][pos_y] != 'U'):
                         self.grid[pos_x+1][pos_y] += 1  # the row after the lightning_bolt
+                        self.answer_key[(pos_x+1, pos_y)].configure(text=str(self.grid[pos_x+1][pos_y]),
+                                                                    compound="center",
+                                                                    font=('Helvetica', 18, 'bold'))
 
                 if (pos_x >= 1):
                     if (self.grid[pos_x-1][pos_y] != 'X' and self.grid[pos_x-1][pos_y] != 'U'):
                         self.grid[pos_x-1][pos_y] += 1 # the row before the lightning_bolt
+                        self.answer_key[(pos_x-1, pos_y)].configure(text=str(self.grid[pos_x-1][pos_y]),
+                                                                    compound="center",
+                                                                    font=('Helvetica', 18, 'bold'))
 
                 if (pos_y >= 1):
                     if (self.grid[pos_x][pos_y-1] != 'X' and self.grid[pos_x][pos_y-1] != 'U'):
                         self.grid[pos_x][pos_y-1] += 1 # the col before the lightning_bolt
+                        self.answer_key[(pos_x, pos_y-1)].configure(text=str(self.grid[pos_x][pos_y-1]),
+                                                                    compound="center",
+                                                                    font=('Helvetica', 18, 'bold'))
 
                 if (pos_y <= self.tiles-2):
                     if (self.grid[pos_x][pos_y+1] != 'X' and self.grid[pos_x][pos_y+1] != 'U'):
                         self.grid[pos_x][pos_y+1] += 1 # the col after the lightning_bolt
+                        self.answer_key[(pos_x, pos_y+1)].configure(text=str(self.grid[pos_x][pos_y+1]),
+                                                                    compound="center",
+                                                                    font=('Helvetica', 18, 'bold'))
 
                 if (pos_y <= self.tiles-2 and pos_x <= self.tiles-2):
                     if (self.grid[pos_x+1][pos_y+1] != 'X' and self.grid[pos_x+1][pos_y+1] != 'U'):
                         self.grid[pos_x+1][pos_y+1] += 1 # diagonally to the bottom right
+                        self.answer_key[(pos_x+1, pos_y+1)].configure(text=str(self.grid[pos_x+1][pos_y+1]),
+                                                                    compound="center",
+                                                                    font=('Helvetica', 18, 'bold'))
 
                 if (pos_y <= self.tiles-2 and pos_x >= 1):
                     if (self.grid[pos_x-1][pos_y+1] != 'X' and self.grid[pos_x-1][pos_y+1] != 'U'):
                         self.grid[pos_x-1][pos_y+1] += 1 # diagonally to the bottom left
+                        self.answer_key[(pos_x-1, pos_y+1)].configure(text=str(self.grid[pos_x-1][pos_y+1]),
+                                                                    compound="center",
+                                                                    font=('Helvetica', 18, 'bold'))
 
                 if (pos_y >= 1 and pos_x >= 1):
                     if (self.grid[pos_x-1][pos_y-1] != 'X' and self.grid[pos_x-1][pos_y-1] != 'U'):
                         self.grid[pos_x-1][pos_y-1] += 1 # diagonally to the top left
+                        self.answer_key[(pos_x-1, pos_y-1)].configure(text=str(self.grid[pos_x-1][pos_y-1]),
+                                                                    compound="center",
+                                                                    font=('Helvetica', 18, 'bold'))
 
                 if (pos_y >= 1 and pos_x <= self.tiles-2):
                      if (self.grid[pos_x+1][pos_y-1] != 'X' and self.grid[pos_x+1][pos_y-1] != 'U'):
                         self.grid[pos_x+1][pos_y-1] += 1 # diagonally to the top right
+                        self.answer_key[(pos_x+1, pos_y-1)].configure(text=str(self.grid[pos_x+1][pos_y-1]),
+                                                                    compound="center",
+                                                                    font=('Helvetica', 18, 'bold'))
 
                 lightning_bolts_placed += 1
 
@@ -120,6 +164,16 @@ class Quanticorn:
     flipped."""
     def initialise_player_grid(self):
         self.player_grid = [['-' for row in range(self.tiles)] for col in range(self.tiles)]
+
+        # create GUI with unopened tiles
+        for r in range(self.tiles):
+            for c in range(self.tiles):
+                self.unopenedTile = Button(frame, image = dict_of_images['tile'],command=flip_tile)
+                self.unopenedTile["bg"] = "white"
+                self.unopenedTile["border"] = "0"
+                self.unopenedTile.grid(row=r, column=c)
+                self.tiles_on_screen[(r, c)] = self.unopenedTile
+
         return self.player_grid
 
 
@@ -201,6 +255,12 @@ def home_screen():
             tile.grid(row=x_pos, column=y_pos)
 
 
+
+def flip_tile():
+    print("here")
+
+
+
 if __name__ == "__main__":
 
     # Setting up the tkinter GUI environment
@@ -208,49 +268,31 @@ if __name__ == "__main__":
     window = create_window(width, height) # calls the create_window function.
 
     dict_of_images = {}
-    # image = Image.open("../../static/graphics/logo_img.jpg")
-    # image = image.resize((100, 50), Image.ANTIALIAS)
-    # logo = ImageTk.PhotoImage(image)
+    dict_of_images['logo'] = PhotoImage(file="../../static/graphics/logo.png")
     dict_of_images['lightning'] = PhotoImage(file="../../static/graphics/lightning.png")
     dict_of_images['tile'] = PhotoImage(file="../../static/graphics/tile-unopened.png")
-    dict_of_images['tile_locked'] = PhotoImage(file="../../static/graphics/locked.png")
+    dict_of_images['tile_locked'] = PhotoImage(file="../../static/graphics/tile-locked.png")
     dict_of_images['tile_opened'] = PhotoImage(file="../../static/graphics/tile-opened.png")
     dict_of_images['unicorn'] = PhotoImage(file="../../static/graphics/unicorn.png")
 
-    canvas = Canvas(window, width=width, height=10, bg="black")
+    canvas = Canvas(window, width=width, height=25, bg="black")
     canvas.pack(side='top', fill='y', expand=True)
-    frame = Frame(window, width=width, height=height-10, bg='white', padx=5, pady=5)
+    frame = Frame(window, width=width, height=height-25, bg='white', padx=5, pady=5)
     frame.pack(side="bottom", fill="y", expand=False)
-
     frame.grid_rowconfigure(10, weight=1)
     frame.grid_columnconfigure(10, weight=1)
-    tiles = {}
-    for row in range(10):
-        for column in range(10):
-            # tile = Frame(bg='white', highlightbackground="black",
-            #              highlightcolor="black", highlightthickness=1,
-            #              width=100, height=100,  padx=3,  pady=3)
-            tile = Button(frame, image = dict_of_images['tile'],command=None)
-            tile["bg"] = "white"
-            tile["border"] = "0"
-            tile.grid(row=row, column=column)
-            tiles[(row, column)] = tile
-    # frame.grid()
-
-
-    # game variables
-    score = 0
 
     # home_screen() # sets up the game environment
 
-    game = Quanticorn(3, 4)  # create an instance of the game
-                   # inital score of the user
+    game = Quanticorn(10, 10)  # create an instance of the game
+    score = 0                  # inital score of the user
 
     grid = game.initialise_grid()
     game.display_grid(grid)  # for testing purposes
 
     player_grid = game.initialise_player_grid()
     game.display_grid(player_grid)
+
 
     avaliable_flips = (game.tiles*game.tiles - 4)  # limit the number of avaliable flips
     lightning_bolt_found = False
@@ -327,6 +369,8 @@ if __name__ == "__main__":
             if max_val != 1:
                 # reveal the cell
                 game.player_grid[x][y] = game.grid[x][y]
+                # game.tiles_on_screen[(x,y)].configure(image=dict_of_images['tile_opened'])
+                game.tiles_on_screen[(x, y)] = game.openedTile
             else:
                 print("The Quantum World is not in your favour!")
                 game.player_grid[x][y] = '$'  # blank cell
