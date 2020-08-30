@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import messagebox
 from PIL import Image
 from PIL import ImageTk
 
@@ -10,7 +11,7 @@ import qiskit as q
 from qiskit import Aer
 from qiskit import IBMQ
 
-IBMQ.save_account(open("keypath.txt","r").read())
+# IBMQ.save_account(open("keypath.txt","r").read())
 IBMQ.load_account()
 backend = Aer.get_backend("qasm_simulator") # Running jobs on the simulator locally
 
@@ -168,14 +169,20 @@ class Quanticorn:
         # create GUI with unopened tiles
         for r in range(self.tiles):
             for c in range(self.tiles):
-                self.unopenedTile = Button(frame, image = dict_of_images['tile'],command=flip_tile)
+                self.unopenedTile = Button(frame, image = dict_of_images['tile'],
+                                            command = lambda row=r, column=c: self.flip_tile(row, column),
+                                            text='')
                 self.unopenedTile["bg"] = "white"
                 self.unopenedTile["border"] = "0"
                 self.unopenedTile.grid(row=r, column=c)
+                # self.unopenedTile.configure()
                 self.tiles_on_screen[(r, c)] = self.unopenedTile
 
         return self.player_grid
 
+    def flip_tile(self, r, c):
+        self.tiles_on_screen[(r, c)].destroy()
+        self.tiles_on_screen[(r, c)] = self.answer_key[(r, c)]
 
     """This function takes in player grid or grid as its input and prints the
     grid on the screen."""
@@ -187,11 +194,13 @@ class Quanticorn:
     """This function checks if the game is over/ the player has lost."""
     def game_finished(self, player_grid, avaliable_flips, lightning_bolt_found):
         if avaliable_flips < 0:
+            messagebox.showinfo('You Lost', 'Maximum limit of flips reached!', icon='error')
             print("Maximum limit of flips reached!")
             return True
 
         if (lightning_bolt_found == True):
             print("Oops, you accidentally clicked on the lightning bolt!")
+            messagebox.showinfo('You Lost', 'Oops, you accidentally clicked on the lightning bolt!', icon='error')
             return True
 
         for row in player_grid:
@@ -209,14 +218,16 @@ class Quanticorn:
         # Note - find a better method to check for this *****
         if (check_game == True and score == (self.tiles*self.tiles - self.lightning_bolts - 1)):
             print("You were successful in finding the lightning bolts!")
+            messagebox.showinfo('You Won', 'You were successful in finding the lightning bolts!')
+
             return True
         # The unicorn has been found - game won
         elif (unicorn_found == True):
             print("Congrats, you found the unicorn!")
+            messagebox.showinfo('You Won', 'Congrats, you found the unicorn!')
             return True
         else:
             return False
-
 
 
 def create_window(width_of_window, height_of_window):
@@ -253,12 +264,6 @@ def home_screen():
     for x_pos in range(10):
         for y_pos in range(10):
             tile.grid(row=x_pos, column=y_pos)
-
-
-
-def flip_tile():
-    print("here")
-
 
 
 if __name__ == "__main__":
