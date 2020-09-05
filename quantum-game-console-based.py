@@ -166,7 +166,7 @@ if __name__ == "__main__":
     score = 0                # inital score of the user
 
     grid = game.initialise_grid()
-    game.display_grid(grid)  # for testing purposes
+    # game.display_grid(grid)  # for testing purposes
 
     player_grid = game.initialise_player_grid()
     game.display_grid(player_grid)
@@ -193,11 +193,11 @@ if __name__ == "__main__":
         print("Open a tile")
         # EDIT THIS *****************
         # Error checking needs to be added to avoid opening the same tile ****
-        check = str(input("y to check the game:"))
-        if (check == 'y'):
-            game_won = game.won(score, unicorn_found, check_game)
-            continue
-        "Choose a tile to begin"
+        # check = str(input("y to check the game:"))
+        # if (check == 'y'):
+        #     game_won = game.won(score, unicorn_found, check_game)
+        #     continue
+        print("Choose a tile to begin")
         x = input("Row position 1, 2 or 3 :")
         y = input("Column position 1, 2 or 3 :")
         x = int(x) - 1 # 0 based indexing

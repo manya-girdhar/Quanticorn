@@ -208,7 +208,7 @@ class Quanticorn:
             # counts is a dictionary
             counts = job.result().get_counts(self.circuit)
             # print("Counts ", counts)
-            print(round(max_val))
+            # print(round(max_val))
 
             max_val = max(counts, key=counts.get)
 
@@ -235,7 +235,7 @@ class Quanticorn:
             job = q.execute(self.circuit, backend=backend, shots=500)
             counts = job.result().get_counts(self.circuit)
             max_val = max(counts, key=counts.get)
-            print(round(max_val))
+            # print(round(max_val))
             if max_val != 1:
                 # reveal the cell
                 self.player_grid[r][c] = self.grid[r][c]
